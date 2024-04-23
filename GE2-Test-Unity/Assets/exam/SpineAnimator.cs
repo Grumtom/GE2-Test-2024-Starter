@@ -9,9 +9,14 @@ public class SpineAnimator : MonoBehaviour {
     public float angularBondDamping = 25;
 
     private List<Vector3> offsets = new List<Vector3>();
+
+    private Boid boid;
     
     // Use this for initialization
-    void Start () {
+    void Start ()
+    {
+        boid = GetComponent<Boid>();
+        
         if (bones != null)
         {
             for (int i = 0; i < bones.Length; i++)
@@ -33,29 +38,32 @@ public class SpineAnimator : MonoBehaviour {
 	
 	// Update is called once per frame
 	void FixedUpdate () {
-        for (int i = 0; i < bones.Length; i++)
+        if (!boid.paused)
         {
-            GameObject prevBone = (i == 0)
-                ? this.gameObject
-                : bones[i - 1];
+            for (int i = 0; i < bones.Length; i++)
+            {
+                GameObject prevBone = (i == 0)
+                    ? this.gameObject
+                    : bones[i - 1];
 
-            GameObject bone = bones[i];
+                GameObject bone = bones[i];
 
-            //Vector3 wantedPosition = prevBone.transform.TransformPoint(offsets[i]);
+                //Vector3 wantedPosition = prevBone.transform.TransformPoint(offsets[i]);
 
-            Vector3 wantedPosition = (prevBone.transform.rotation * offsets[i]) + prevBone.transform.position;
+                Vector3 wantedPosition = (prevBone.transform.rotation * offsets[i]) + prevBone.transform.position;
 
-            bone.transform.position = Vector3.Lerp(bone.transform.position
-                , wantedPosition
-                , Time.deltaTime * bondDamping);
+                bone.transform.position = Vector3.Lerp(bone.transform.position
+                    , wantedPosition
+                    , Time.deltaTime * bondDamping);
 
-            Quaternion wantedRotation = Quaternion.LookRotation(prevBone.transform.position
-                - bone.transform.position);
+                Quaternion wantedRotation = Quaternion.LookRotation(prevBone.transform.position
+                                                                    - bone.transform.position);
 
-            bone.transform.rotation = Quaternion.Slerp(bone.transform.rotation
-                , wantedRotation
-                , Time.deltaTime * angularBondDamping);
+                bone.transform.rotation = Quaternion.Slerp(bone.transform.rotation
+                    , wantedRotation
+                    , Time.deltaTime * angularBondDamping);
 
+            }
         }
     }
 }

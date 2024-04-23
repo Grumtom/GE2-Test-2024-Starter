@@ -19,6 +19,8 @@ public class Boid : MonoBehaviour
     public float maxSpeed = 5.0f;
     public float maxForce = 10.0f;
 
+    public bool paused = true;
+
     public void OnDrawGizmos()
     {
         Gizmos.color = Color.blue;
@@ -103,19 +105,28 @@ public class Boid : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        force = Calculate();
-        acceleration = force / mass;
-        velocity += acceleration * Time.deltaTime;
-
-        velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
-        
-        if (velocity.magnitude > 0)
+        if (Input.GetKeyDown(KeyCode.P))
         {
-            Vector3 tempUp = Vector3.Lerp(transform.up, Vector3.up + (acceleration * banking), Time.deltaTime * 3.0f);
-            transform.LookAt(transform.position + velocity, tempUp);
-
-            transform.position += velocity * Time.deltaTime;
-            velocity *= (1.0f - (damping * Time.deltaTime));
+            paused = !paused;
         }
+        
+        if (!paused)
+        {
+            force = Calculate();
+            acceleration = force / mass;
+            velocity += acceleration * Time.deltaTime;
+
+            velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
+        
+            if (velocity.magnitude > 0)
+            {
+                Vector3 tempUp = Vector3.Lerp(transform.up, Vector3.up + (acceleration * banking), Time.deltaTime * 3.0f);
+                transform.LookAt(transform.position + velocity, tempUp);
+
+                transform.position += velocity * Time.deltaTime;
+                velocity *= (1.0f - (damping * Time.deltaTime));
+            }
+        }
+        
     }
 }
