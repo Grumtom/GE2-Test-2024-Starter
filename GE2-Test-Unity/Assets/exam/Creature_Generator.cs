@@ -18,6 +18,7 @@ public class Creature_Generator : MonoBehaviour
     [Header("Extra Spice")]
     [SerializeField] private bool generateFins;
     [SerializeField] private int finInterval;
+    [SerializeField] private int finIntervalOffset = 0;
     [SerializeField] private int finLengthMultiplier;
 
     [Header("References")]
@@ -27,14 +28,15 @@ public class Creature_Generator : MonoBehaviour
 
     [Header("Private")]
     [SerializeField] private GameObject[] segments;
-    [SerializeField]private Vector3[] positions;
-    [SerializeField]private Vector3[] sizes;
+    [SerializeField] private Vector3[] positions;
+    [SerializeField] private Vector3[] sizes;
     
-    [SerializeField]private List<int> finLengths;
-    [SerializeField]private List<int> finIndexes;
-    [SerializeField]private List<Vector3> finPositions;
+    [SerializeField] private List<int> finLengths;
+    [SerializeField] private List<int> finIndexes;
+    [SerializeField] private List<Vector3> finPositions;
     [SerializeField] private List<Vector3> finSizes;
-    [SerializeField]private List<Quaternion> finRotations;
+    [SerializeField] private List<Quaternion> finRotations;
+    [SerializeField] private List<int> finParentIndexes;
 
     private void Awake()
     {
@@ -66,6 +68,7 @@ public class Creature_Generator : MonoBehaviour
         finPositions = new List<Vector3>();
         finSizes = new List<Vector3>();
         finRotations = new List<Quaternion>();
+        finParentIndexes = new List<int>();
 
         if (finInterval < 1)
         {
@@ -74,7 +77,7 @@ public class Creature_Generator : MonoBehaviour
 
         for (int i = 0; i < length; i++)
         {
-            int j = i;
+            int j = i + finIntervalOffset;
             j -= finInterval;
             while (j > 0 && finInterval > 0) 
             {
@@ -94,23 +97,34 @@ public class Creature_Generator : MonoBehaviour
             {
                 if (j == 0)
                 {
-                    finSizes.Add(sizes[finIndexes[i]]);
-                    finSizes.Add(sizes[finIndexes[i]]);
-                    
-                    finPositions.Add(positions[finIndexes[i]] + Vector3.right * finSizes[j].x * 3);
-                    finPositions.Add(positions[finIndexes[i]] - Vector3.right * finSizes[j].x * 3);
+                    finSizes.Add(sizes[finIndexes[i]] * 0.7f);
+                    finPositions.Add(positions[finIndexes[i]] + Vector3.right * finSizes[j].x * 1.4f);
                 }
                 else
                 {
                     finSizes.Add(finSizes[^1] * 0.7f);
-                    finSizes.Add(finSizes[^2] * 0.7f);
-                    
-                    finPositions.Add(finPositions[j^1] + Vector3.right * finSizes[j].x * 3);
-                    finPositions.Add(finPositions[j^2] - Vector3.right * finSizes[j].x * 3);
+                    finPositions.Add(finPositions[^1] + Vector3.right * finSizes[j].x * 1.4f);
                 }
                 
                 finRotations.Add(Quaternion.Euler(0,90,0));
+                finParentIndexes.Add(finIndexes[i]);
+            }
+            
+            for (int j = 0; j < finLengths[i]; j++)
+            {
+                if (j == 0)
+                {
+                    finSizes.Add(sizes[finIndexes[i]] * 0.7f);
+                    finPositions.Add(positions[finIndexes[i]] - Vector3.right * finSizes[j].x * 1.4f);
+                }
+                else
+                {
+                    finSizes.Add(finSizes[^1] * 0.7f);
+                    finPositions.Add(finPositions[^1] - Vector3.right * finSizes[j].x * 1.4f);
+                }
+                
                 finRotations.Add(Quaternion.Euler(0,-90,0));
+                finParentIndexes.Add(finIndexes[i]);
             }
         }
         
@@ -130,6 +144,18 @@ public class Creature_Generator : MonoBehaviour
             SpineAnimator.bones[i] = segment;
 
             segments[i] = segment;
+        }
+
+        if (generateFins)
+        {
+            for (int i = 0; i < finPositions.Count; i++)
+            {
+                GameObject finSegment = Instantiate(finSegmentPrefab, finPositions[i], finRotations[i]);
+
+                finSegment.transform.localScale = finSizes[i];
+                
+                finSegment.transform.SetParent(segments[finParentIndexes[i]].transform, true);
+            }
         }
     }
 
