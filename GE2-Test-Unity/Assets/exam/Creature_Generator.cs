@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class Creature_Generator : MonoBehaviour
@@ -26,14 +27,14 @@ public class Creature_Generator : MonoBehaviour
 
     [Header("Private")]
     [SerializeField] private GameObject[] segments;
-    private Vector3[] positions;
-    private Vector3[] sizes;
-
-    private int finSegmentCount;
-    private List<int> finLengths;
-    private List<int> finIndexes;
-    private List<Vector3> finPositions;
-    private List<float> finSizes;
+    [SerializeField]private Vector3[] positions;
+    [SerializeField]private Vector3[] sizes;
+    
+    [SerializeField]private List<int> finLengths;
+    [SerializeField]private List<int> finIndexes;
+    [SerializeField]private List<Vector3> finPositions;
+    [SerializeField] private List<Vector3> finSizes;
+    [SerializeField]private List<Quaternion> finRotations;
 
     private void Awake()
     {
@@ -51,41 +52,66 @@ public class Creature_Generator : MonoBehaviour
 
         for (int i = 0; i < length; i++)
         {
-            float size = baseSize + Mathf.Sin(startAngle + frequency * i * multiplier);
+            float size = baseSize + Mathf.Sin(startAngle + frequency * i * 0.1f)  * multiplier;
             sizes[i] = new Vector3(size, size, size);
             positions[i] = pastPosition - (transform.forward * size);
             pastPosition = positions[i];
-
-            
-           
         }
     }
 
     void CalculateFins()
     {
-        finSegmentCount = 0;
         finLengths = new List<int>();
+        finIndexes = new List<int>();
         finPositions = new List<Vector3>();
-        finSizes = new List<float>();
+        finSizes = new List<Vector3>();
+        finRotations = new List<Quaternion>();
+
+        if (finInterval < 1)
+        {
+            finInterval = 1;
+        }
 
         for (int i = 0; i < length; i++)
         {
             int j = i;
-            while (j > -1)
+            j -= finInterval;
+            while (j > 0 && finInterval > 0) 
             {
                 j -= finInterval;
             }
 
             if (j == 0)
             {
-                finLengths.Add(Mathf.CeilToInt(sizes[i].x));
+                finLengths.Add(Mathf.CeilToInt(sizes[i].x * finLengthMultiplier));
                 finIndexes.Add(i);
             }
         }
 
         for (int i = 0; i < finIndexes.Count; i++)
         {
-            
+            for (int j = 0; j < finLengths[i]; j++)
+            {
+                if (j == 0)
+                {
+                    finSizes.Add(sizes[finIndexes[i]]);
+                    finSizes.Add(sizes[finIndexes[i]]);
+                    
+                    finPositions.Add(positions[finIndexes[i]] + Vector3.right * finSizes[j].x * 3);
+                    finPositions.Add(positions[finIndexes[i]] - Vector3.right * finSizes[j].x * 3);
+                }
+                else
+                {
+                    finSizes.Add(finSizes[^1] * 0.7f);
+                    finSizes.Add(finSizes[^2] * 0.7f);
+                    
+                    finPositions.Add(finPositions[j^1] + Vector3.right * finSizes[j].x * 3);
+                    finPositions.Add(finPositions[j^2] - Vector3.right * finSizes[j].x * 3);
+                }
+                
+                finRotations.Add(Quaternion.Euler(0,90,0));
+                finRotations.Add(Quaternion.Euler(0,-90,0));
+            }
         }
         
     }
@@ -112,11 +138,27 @@ public class Creature_Generator : MonoBehaviour
         if (calculateInEditor && !Application.isPlaying)
         {
             CalculateBoidShape();
+            
+            Gizmos.color = Color.magenta;
 
             for (int i = 0; i < length; i++)
             {
-                Gizmos.DrawCube(positions[i], sizes[i]);
+                Gizmos.DrawWireCube(positions[i], sizes[i]);
             }
+
+            if (generateFins)
+            {
+                CalculateFins();
+                
+                Gizmos.color = Color.red;
+                
+                for (int i = 0; i < finPositions.Count; i++)
+                {
+                    Gizmos.DrawWireCube(finPositions[i], finSizes[i]);
+                }
+            }
+
+            
         }
     }
 }
